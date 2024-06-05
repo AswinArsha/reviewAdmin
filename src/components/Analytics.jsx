@@ -16,7 +16,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaCalendarAlt, FaTimesCircle } from "react-icons/fa";
 
-
 const getMonthName = (date) => {
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -28,8 +27,6 @@ const getMonthName = (date) => {
 const Analytics = () => {
   const [salesmen, setSalesmen] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [reviewCounts, setReviewCounts] = useState([]);
-  const [clients, setClients] = useState([]);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
@@ -54,25 +51,16 @@ const Analytics = () => {
     else setActivities(activitiesData);
   };
 
-  const fetchClients = async () => {
-    const { data: clientsData, error: clientsError } = await supabase
-      .from('clients')
-      .select('*');
-    if (clientsError) console.error("Error fetching clients:", clientsError);
-    else setClients(clientsData);
-  };
-
   useEffect(() => {
     fetchSalesmen();
     fetchActivities();
-    fetchClients();
   }, []);
 
   const filterActivitiesByDate = (activities) => {
     if (!startDate && !endDate) return activities;
     return activities.filter(activity => {
       const activityDate = new Date(activity.activity_timestamp);
-      return (!startDate || activityDate >= startDate) && (!endDate || activityDate <= endDate);
+      return (!startDate || activityDate >= startDate) && (!endDate || activityDate <= new Date(endDate).setHours(23, 59, 59, 999));
     });
   };
 
@@ -150,14 +138,14 @@ const Analytics = () => {
     activities.forEach(activity => {
       const date = new Date(activity.activity_timestamp);
       const month = months[date.getMonth()];
-      const salesman = salesmen.find(s => s.id === activity.salesman_id);
-      if (salesman) {
-        monthlyData[month] += salesman.points;
+      if (activity.client_id === parseInt(client_id)) {
+        monthlyData[month] += 1;
       }
     });
 
     return Object.entries(monthlyData).map(([month, points]) => ({ month, points }));
   };
+
   const monthlyPerformanceData = generateMonthlyPerformanceData();
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -203,48 +191,16 @@ const Analytics = () => {
       )
       .subscribe();
   
-    const reviewCountsSubscription = supabase
-      .channel('review_counts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'review_counts',
-        },
-        () => {
-          fetchReviewCounts();
-        }
-      )
-      .subscribe();
-  
-    const clientsSubscription = supabase
-      .channel('clients')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'clients',
-        },
-        () => {
-          fetchClients();
-        }
-      )
-      .subscribe();
-  
     // Clean up subscriptions on unmount
     return () => {
       salesmenSubscription.unsubscribe();
       activitiesSubscription.unsubscribe();
-      reviewCountsSubscription.unsubscribe();
-      clientsSubscription.unsubscribe();
     };
   }, []);
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-4xl font-bold mb-6 text-center relative top-14 text-gray-800">Salesman Analytics Dashboard</h1>
+    <div className="container bg-gray-50 mx-auto p-6">
+      <h1 className="text-4xl font-bold mb-6 mt-4 text-center relative top-14 text-gray-800">Salesman Analytics Dashboard</h1>
 
       <div className="flex flex-col md:flex-row items-center mt-24 mb-8 justify-center space-x-4 space-y-4 md:space-y-0">
         <div className="flex items-center space-x-2">
@@ -258,7 +214,7 @@ const Analytics = () => {
             startDate={startDate}
             endDate={endDate}
             dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded px-2 py-1"
+            className="border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex items-center space-x-2">
@@ -273,12 +229,12 @@ const Analytics = () => {
             endDate={endDate}
             minDate={startDate}
             dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded px-2 py-1"
+            className="border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <button
           onClick={clearDates}
-          className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg"
+          className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
         >
           <FaTimesCircle className="mr-2" /> Clear
         </button>
@@ -289,55 +245,56 @@ const Analytics = () => {
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={totalReviewPointsPerSalesman}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-            <XAxis dataKey="name" />
-            <YAxis />
+            <XAxis dataKey="name" tick={{ fontSize: 14 }} />
+            <YAxis tick={{ fontSize: 14 }} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '14px' }} />
             <Bar dataKey="points" fill="#4c51bf" />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-  <h2 className="text-2xl font-semibold mb-6 text-gray-800">Top and Low Performers</h2>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div className="bg-white p-4 rounded-lg shadow">
-      <h3 className="text-xl font-semibold mb-4 text-green-500">Top Performers</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={topPerformers}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ fontSize: '14px' }} />
-          <Bar dataKey="points" fill="#44bf44" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-    <div className="bg-white p-4 rounded-lg shadow">
-      <h3 className="text-xl font-semibold mb-4 text-red-500">Low Performers</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={lowPerformers}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ fontSize: '14px' }} />
-          <Bar dataKey="points" fill="#ff5252" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-</div>
+        <h2 className="text-2xl font-semibold mb-6 text-gray-800">Top and Low Performers</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-xl font-semibold mb-4 text-green-500">Top Performers</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topPerformers}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '14px' }} />
+                <Bar dataKey="points" fill="#44bf44" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-xl font-semibold mb-4 text-red-500">Low Performers</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={lowPerformers}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '14px' }} />
+                <Bar dataKey="points" fill="#ff5252" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">Salesman Performance in {currentMonth}</h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={Object.entries(productivityOverTime).map(([date, count]) => ({ date, count }))}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-            <XAxis dataKey="date" />
-            <YAxis />
+            <XAxis dataKey="date" tick={{ angle: -45, textAnchor: 'end', fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '14px',marginBottom:'-24px' }} />
             <Line type="monotone" dataKey="count" stroke="#4c51bf" />
           </LineChart>
         </ResponsiveContainer>
@@ -348,8 +305,8 @@ const Analytics = () => {
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={monthlyPerformanceData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
+            <XAxis dataKey="month" tick={{ fontSize: 14 }} />
+            <YAxis tick={{ fontSize: 14 }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: '14px' }} />
             <Line type="monotone" dataKey="points" stroke="#48bb78" strokeWidth={3} dot={{ stroke: '#48bb78', strokeWidth: 2 }} activeDot={{ r: 8 }} />

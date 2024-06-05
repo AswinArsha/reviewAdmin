@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { FaSpinner } from 'react-icons/fa';
+import 'tailwindcss/tailwind.css';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -37,39 +39,46 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="container max-w-md mx-auto p-4 sm:p-8 bg-white shadow-md rounded-lg">
-        <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">Admin Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-md mx-auto p-8 bg-white shadow-lg rounded-lg">
+        <h1 className="text-3xl font-bold mb-8 text-center text-gray-900">Admin Login</h1>
         <form onSubmit={handleLogin} className="space-y-6">
-          {error && <div className="text-red-600">{error}</div>}
+          {error && <div className="text-red-600 text-center">{error}</div>}
           <div>
-            <label htmlFor="email" className="block text-gray-700">Email:</label>
+            <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Email:</label>
             <input
               type="email"
               id="email"
-              className="w-full p-3 border border-gray-300 rounded mt-1 focus:outline-none focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-gray-700">Password:</label>
+            <label htmlFor="password" className="block text-gray-700 font-medium mb-2">Password:</label>
             <input
               type="password"
               id="password"
-              className="w-full p-3 border border-gray-300 rounded mt-1 focus:outline-none focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
-          <button 
-            type="submit" 
-            className={`w-full p-3 rounded ${loading ? 'bg-gray-400' : 'bg-blue-500'} text-white transition-colors duration-150 hover:bg-blue-600 focus:outline-none`}
+          <button
+            type="submit"
+            className={`w-full p-3 rounded-lg text-white font-medium transition-colors duration-300 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} focus:outline-none`}
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <FaSpinner className="animate-spin mr-2" />
+                Logging in...
+              </div>
+            ) : (
+              'Login'
+            )}
           </button>
         </form>
       </div>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy } from 'react-icons/fa';
 import 'tailwindcss/tailwind.css';
+import whitetapLogo from '../assets/whitetap.png';
 
 const AdminPanel = () => {
   const [salesmen, setSalesmen] = useState([]);
@@ -157,8 +158,8 @@ const AdminPanel = () => {
     }
   };
 
-  const handleCopyLink = () => {
-    const link = 'https://www.google.com/';
+  const handleCopyLink = (salesman) => {
+    const link = `http://54.86.212.176/app/${client_id}/${salesman.id}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -169,47 +170,53 @@ const AdminPanel = () => {
   );
 
   return (
-    <div className="min-h-screen p-4 pt-20 bg-white">
-      <div className="text-center mb-2">
+    <div className="min-h-screen p-4 pt-20 bg-gray-50">
+      <div className="text-center mt-4 mb-2">
         {logoUrl && (
           <img src={logoUrl} alt="Company Logo" className="mx-auto w-24 h-auto mb-3" />
         )}
         <h1 className="text-3xl font-bold text-gray-800">Review Count Table</h1>
-        <p className="text-gray-600">Powered by White Tap</p>
+        <p className="text-gray-600 -mt-16 -mb-[68px] ml-[70px]">
+          Powered by
+          <img src={whitetapLogo} alt="White Tap Logo" className="inline-block w-48 h-auto -ml-12" />
+        </p>
       </div>
 
-      <div className="lg:flex lg:items-center lg:justify-between lg:mb-8 sticky top-16 z-10 p-4 bg-white">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 lg:mb-0 lg:space-x-4 w-full">
-          <div className="relative mb-4 md:mb-0 flex-grow">
-            <input
-              type="text"
-              className="border rounded-lg py-2 px-4 w-full focus:outline-none focus:ring focus:border-blue-300"
-              placeholder="Search by name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
-              <FaSearch />
-            </span>
-          </div>
+      <div className="lg:flex lg:items-center lg:justify-between lg:mb-8 sticky top-16 z-10 p-4 bg-gray-50">
+  <div className="flex flex-col md:flex-row md:items-center md:space-x-4  justify-between mb-8 lg:mb-0 lg:space-x-4 w-full">
+    <div className="relative mb-4 md:mb-0 flex-grow">
+      <input
+        type="text"
+        className="border rounded-lg py-2 px-4 w-full focus:outline-none focus:ring focus:border-blue-300"
+        placeholder="Search by name"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
+        <FaSearch />
+      </span>
+    </div>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center mb-4 md:mb-0"
-          >
-            <FaPlus className="mr-2" />
-            Add Salesman
-          </button>
+    <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 w-full md:w-auto">
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center justify-center mb-4 md:mb-0"
+      >
+        <FaPlus className="mr-2" />
+        Add Salesman
+      </button>
 
-          <button
-            onClick={toggleSortOrder}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
-          >
-            {sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}
-            <span className="ml-2">Sort by Points</span>
-          </button>
-        </div>
-      </div>
+      <button
+        onClick={toggleSortOrder}
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center"
+      >
+        {sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}
+        <span className="ml-2">Sort by Points</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -218,21 +225,21 @@ const AdminPanel = () => {
       ) : filteredSalesmen.length === 0 ? (
         <div className="text-center text-gray-500">No salesmen found</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSalesmen.map((salesman) => (
             <div
               key={salesman.id}
-              className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow relative"
+              className="bg-white p-6 rounded-lg shadow hover:shadow-xl transition-shadow relative"
             >
               <h2 className="text-xl font-bold text-gray-800">{salesman.name}</h2>
               <p className="text-gray-600">Points: {salesman.points}</p>
               <div className="absolute top-2 right-2 flex space-x-2">
-              <button
+                <button
                   onClick={() => {
                     setSelectedSalesman(salesman);
                     setShowViewModal(true);
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-200 transition"
                 >
                   <FaEye />
                 </button>
@@ -242,7 +249,7 @@ const AdminPanel = () => {
                     setNewSalesmanName(salesman.name);
                     setShowEditModal(true);
                   }}
-                  className="text-blue-500 hover:text-blue-700"
+                  className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition"
                 >
                   <FaEdit />
                 </button>
@@ -251,11 +258,10 @@ const AdminPanel = () => {
                     setSelectedSalesman(salesman);
                     setShowDeleteModal(true);
                   }}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition"
                 >
                   <FaTrash />
                 </button>
-              
               </div>
             </div>
           ))}
@@ -263,7 +269,7 @@ const AdminPanel = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Add Salesman</h2>
@@ -300,7 +306,7 @@ const AdminPanel = () => {
       )}
 
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Edit Salesman</h2>
@@ -345,7 +351,7 @@ const AdminPanel = () => {
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Delete Salesman</h2>
@@ -378,7 +384,7 @@ const AdminPanel = () => {
       )}
 
       {showViewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">View Salesman</h2>
@@ -390,26 +396,32 @@ const AdminPanel = () => {
               </button>
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 font-semibold">Salesman Name:</label>
+             
               <p className="text-gray-900">{selectedSalesman?.name}</p>
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 font-semibold">URL:</label>
+           
               <div className="flex items-center">
                 <input
                   type="text"
                   className="border rounded-lg py-2 px-4 w-full"
-                  value="https://www.google.com/"
+                  value={`http://54.86.212.176/app/${client_id}/${selectedSalesman?.id}`}
                   readOnly
                 />
-                <button
-                  onClick={handleCopyLink}
-                  className="bg-gray-200 text-gray-700 px-2 py-1 ml-2 rounded-lg hover:bg-gray-300"
-                >
-                  <FaCopy />
-                </button>
+                <div className="relative flex items-center">
+                  <button
+                    onClick={() => handleCopyLink(selectedSalesman)}
+                    className="bg-gray-200 text-gray-700 px-2 py-1 ml-2 rounded-lg hover:bg-gray-300"
+                  >
+                    <FaCopy />
+                  </button>
+                  {copied && (
+                    <div className="absolute left-full ml-2 p-1 bg-emerald-500 text-white rounded-lg shadow">
+                      Copied!
+                    </div>
+                  )}
+                </div>
               </div>
-              {copied && <p className="text-green-500 mt-2">Copied!</p>}
             </div>
             <div className="flex justify-end">
               <button
