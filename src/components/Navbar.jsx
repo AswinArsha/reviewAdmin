@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import 'tailwindcss/tailwind.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -17,12 +18,15 @@ const Navbar = () => {
     setMenuOpen(!menuOpen);
   };
 
+  const showNavbar = location.pathname !== '/admin-login';
+
+  if (!showNavbar) return null;
+
   return (
     <nav className="bg-gray-900 text-white py-4 shadow-md fixed w-full z-20">
       <div className="container mx-auto flex justify-between items-center px-4 md:px-0">
         <div className="text-2xl font-bold tracking-wide">
           <p className="flex items-center">
-
             Admin Dashboard
           </p>
         </div>
