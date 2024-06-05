@@ -7,9 +7,14 @@ import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 
 function App() {
+  const location = useLocation();
+
+  const showNavbar = location.pathname !== '/admin-login';
+  const clientLogo = localStorage.getItem('clientLogo');
+
   return (
     <>
-      <Navbar />
+      {showNavbar && <Navbar clientLogo={clientLogo} />}
       <Routes>
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route element={<PrivateRoute />}>

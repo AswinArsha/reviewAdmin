@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +8,11 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showNavbar, setShowNavbar] = useState(true);
+
+  useEffect(() => {
+    setShowNavbar(!location.pathname.startsWith('/admin-login'));
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('adminLoggedIn');
@@ -17,8 +22,6 @@ const Navbar = () => {
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
-
-  const showNavbar = location.pathname !== '/admin-login';
 
   if (!showNavbar) return null;
 
