@@ -1,8 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy } from 'react-icons/fa';
+import {
+  FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy, FaChartLine
+} from 'react-icons/fa';
 import 'tailwindcss/tailwind.css';
 import whitetapLogo from '../assets/whitetap.png';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Legend,
+  LabelList
+} from 'recharts';
+
+const getMonthName = (date) => {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return months[date.getMonth()];
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-800 text-white p-2 rounded shadow-lg">
+        <p className="font-semibold">{`${label} : ${payload[0].value}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const AdminPanel = () => {
   const [salesmen, setSalesmen] = useState([]);
@@ -13,10 +49,14 @@ const AdminPanel = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedSalesman, setSelectedSalesman] = useState(null);
   const [newSalesmanName, setNewSalesmanName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [salesmanPerformance, setSalesmanPerformance] = useState([]);
 
   const client_id = localStorage.getItem('client_id');
 
@@ -56,6 +96,27 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.error('Error fetching client logo:', error);
+    }
+  };
+
+  const fetchSalesmanPerformance = async (salesmanId) => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    try {
+      const { data, error } = await supabase
+        .from('client_salesman_activity')
+        .select('*')
+        .eq('salesman_id', salesmanId)
+        .eq('client_id', client_id)
+        .gte('activity_timestamp', firstDayOfMonth.toISOString());
+
+      if (error) {
+        console.error('Error fetching salesman performance:', error);
+      } else {
+        setSalesmanPerformance(data);
+      }
+    } catch (error) {
+      console.error('Error fetching salesman performance:', error);
     }
   };
 
@@ -118,7 +179,7 @@ const AdminPanel = () => {
   };
 
   const handleEditSalesman = async () => {
-    if (!selectedSalesman) return;
+    if (!selectedSalesman || newSalesmanName.trim() === '') return;
 
     try {
       const { data, error } = await supabase
@@ -159,14 +220,50 @@ const AdminPanel = () => {
   };
 
   const handleCopyLink = (salesman) => {
-    const link = `http://54.86.212.176/app/${client_id}/${salesman.id}`;
+    const link = `http://23.22.156.196/app/${client_id}/${salesman.id}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShowAnalytics = async (salesman) => {
+    setSelectedSalesman(salesman);
+    await fetchSalesmanPerformance(salesman.id);
+    setShowAnalyticsModal(true);
+  };
+
   const filteredSalesmen = salesmen.filter((salesman) =>
     salesman.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const clearDates = () => {
+    setStartDate(null);
+    setEndDate(null);
+  };
+
+  const filterPerformanceByDate = () => {
+    if (!startDate && !endDate) return salesmanPerformance;
+
+    return salesmanPerformance.filter((activity) => {
+      const activityDate = new Date(activity.activity_timestamp);
+      return (
+        (!startDate || activityDate >= startDate) &&
+        (!endDate || activityDate <= new Date(endDate).setHours(23, 59, 59, 999))
+      );
+    });
+  };
+
+  const performanceData = filterPerformanceByDate().map((activity) => ({
+    date: new Date(activity.activity_timestamp).toLocaleDateString(),
+    count: 1,
+  }));
+
+  const aggregatedPerformanceData = Object.values(
+    performanceData.reduce((acc, { date, count }) => {
+      acc[date] = acc[date] || { date, count: 0 };
+      acc[date].count += count;
+      return acc;
+    }, {})
   );
 
   return (
@@ -183,40 +280,39 @@ const AdminPanel = () => {
       </div>
 
       <div className="lg:flex lg:items-center lg:justify-between lg:mb-8 sticky top-16 z-10 p-4 bg-gray-50">
-  <div className="flex flex-col md:flex-row md:items-center md:space-x-4  justify-between mb-8 lg:mb-0 lg:space-x-4 w-full">
-    <div className="relative mb-4 md:mb-0 flex-grow">
-      <input
-        type="text"
-        className="border rounded-lg py-2 px-4 w-full focus:outline-none focus:ring focus:border-blue-300"
-        placeholder="Search by name"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-      <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
-        <FaSearch />
-      </span>
-    </div>
+        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 justify-between mb-8 lg:mb-0 lg:space-x-4 w-full">
+          <div className="relative mb-4 md:mb-0 flex-grow">
+            <input
+              type="text"
+              className="border rounded-lg py-2 px-4 w-full focus:outline-none focus:ring focus:border-blue-300"
+              placeholder="Search by name"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
+              <FaSearch />
+            </span>
+          </div>
 
-    <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 w-full md:w-auto">
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center justify-center mb-4 md:mb-0"
-      >
-        <FaPlus className="mr-2" />
-        Add Salesman
-      </button>
+          <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 w-full md:w-auto">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center justify-center mb-4 md:mb-0"
+            >
+              <FaPlus className="mr-2" />
+              Add Salesman
+            </button>
 
-      <button
-        onClick={toggleSortOrder}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center"
-      >
-        {sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}
-        <span className="ml-2">Sort by Points</span>
-      </button>
-    </div>
-  </div>
-</div>
-
+            <button
+              onClick={toggleSortOrder}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center"
+            >
+              {sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}
+              <span className="ml-2">Sort by Points</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -242,6 +338,12 @@ const AdminPanel = () => {
                   className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-200 transition"
                 >
                   <FaEye />
+                </button>
+                <button
+                  onClick={() => handleShowAnalytics(salesman)}
+                  className="text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition"
+                >
+                  <FaChartLine />
                 </button>
                 <button
                   onClick={() => {
@@ -396,11 +498,9 @@ const AdminPanel = () => {
               </button>
             </div>
             <div className="mb-4">
-             
               <p className="text-gray-900">{selectedSalesman?.name}</p>
             </div>
             <div className="mb-4">
-           
               <div className="flex items-center">
                 <input
                   type="text"
@@ -426,6 +526,80 @@ const AdminPanel = () => {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowViewModal(false)}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAnalyticsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-3xl">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold">{selectedSalesman?.name}&apos;s Performance</h2>
+              <button
+                onClick={() => setShowAnalyticsModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
+              <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4 md:items-end">
+                <div>
+                  <label htmlFor="startDate" className="block text-gray-700">Start Date:</label>
+                  <DatePicker
+                    id="startDate"
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
+                    dateFormat="yyyy-MM-dd"
+                    className="border border-gray-300 rounded px-2 py-1 w-full"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="endDate" className="block text-gray-700">End Date:</label>
+                  <DatePicker
+                    id="endDate"
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    selectsEnd
+                    startDate={startDate}
+                    endDate={endDate}
+                    minDate={startDate}
+                    dateFormat="yyyy-MM-dd"
+                    className="border border-gray-300 rounded px-2 py-1 w-full"
+                  />
+                </div>
+                <button
+                  onClick={clearDates}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg mb-4 md:-mb-[0px] lg:mb-0"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="w-full">
+                <h2 className="text-xl font-semibold mb-6 text-gray-800">Performance</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={aggregatedPerformanceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: '14px', marginBottom: '-24px' }} />
+                    <Line type="monotone" dataKey="count" stroke="#4c51bf" strokeWidth={3} dot={{ stroke: '#4c51bf', strokeWidth: 2 }} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="flex justify-end p-4 border-t">
+              <button
+                onClick={() => setShowAnalyticsModal(false)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
               >
                 Close

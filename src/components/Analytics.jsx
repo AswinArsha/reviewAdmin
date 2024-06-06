@@ -10,7 +10,8 @@ import {
   YAxis,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LabelList
 } from "recharts";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -129,12 +130,10 @@ const Analytics = () => {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
 
-    // Initialize all months with 0 points
     months.forEach(month => {
       monthlyData[month] = 0;
     });
 
-    // Add the actual points data for existing months
     activities.forEach(activity => {
       const date = new Date(activity.activity_timestamp);
       const month = months[date.getMonth()];
@@ -160,7 +159,6 @@ const Analytics = () => {
   };
 
   useEffect(() => {
-    // Set up Supabase subscriptions
     const salesmenSubscription = supabase
       .channel('salesmen')
       .on(
@@ -191,7 +189,6 @@ const Analytics = () => {
       )
       .subscribe();
   
-    // Clean up subscriptions on unmount
     return () => {
       salesmenSubscription.unsubscribe();
       activitiesSubscription.unsubscribe();
@@ -243,13 +240,15 @@ const Analytics = () => {
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">Total Review Points per Salesman</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={totalReviewPointsPerSalesman}>
+          <BarChart data={totalReviewPointsPerSalesman} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis dataKey="name" tick={{ fontSize: 14 }} />
             <YAxis tick={{ fontSize: 14 }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: '14px' }} />
-            <Bar dataKey="points" fill="#4c51bf" />
+            <Bar dataKey="points" fill="#4c51bf">
+              <LabelList dataKey="points" position="top" style={{ fontSize: '12px', fill: '#4c51bf' }} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -260,26 +259,30 @@ const Analytics = () => {
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-xl font-semibold mb-4 text-green-500">Top Performers</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topPerformers}>
+              <BarChart data={topPerformers} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: '14px' }} />
-                <Bar dataKey="points" fill="#44bf44" />
+                <Bar dataKey="points" fill="#44bf44">
+                  <LabelList dataKey="points" position="top" style={{ fontSize: '12px', fill: '#44bf44' }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-xl font-semibold mb-4 text-red-500">Low Performers</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={lowPerformers}>
+              <BarChart data={lowPerformers} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: '14px' }} />
-                <Bar dataKey="points" fill="#ff5252" />
+                <Bar dataKey="points" fill="#ff5252">
+                  <LabelList dataKey="points" position="top" style={{ fontSize: '12px', fill: '#ff5252' }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -289,13 +292,13 @@ const Analytics = () => {
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">Salesman Performance in {currentMonth}</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={Object.entries(productivityOverTime).map(([date, count]) => ({ date, count }))}>
+          <LineChart data={Object.entries(productivityOverTime).map(([date, count]) => ({ date, count }))} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis dataKey="date" tick={{ angle: -45, textAnchor: 'end', fontSize: 10 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: '14px',marginBottom:'-24px' }} />
-            <Line type="monotone" dataKey="count" stroke="#4c51bf" />
+            <Legend wrapperStyle={{ fontSize: '14px', marginBottom: '-24px' }} />
+            <Line type="monotone" dataKey="count" stroke="#4c51bf" strokeWidth={3} dot={{ stroke: '#4c51bf', strokeWidth: 2 }} activeDot={{ r: 8 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -303,7 +306,7 @@ const Analytics = () => {
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">Monthly Performance Trends</h2>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={monthlyPerformanceData}>
+          <LineChart data={monthlyPerformanceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis dataKey="month" tick={{ fontSize: 14 }} />
             <YAxis tick={{ fontSize: 14 }} />
