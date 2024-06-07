@@ -220,7 +220,7 @@ const AdminPanel = () => {
   };
 
   const handleCopyLink = (salesman) => {
-    const link = `http://23.22.156.196/app/${client_id}/${salesman.id}`;
+    const link = `https://reviewcard.www.thewhitetap.com/app/${client_id}/${salesman.id}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
