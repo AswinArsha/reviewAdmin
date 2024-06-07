@@ -505,7 +505,7 @@ const AdminPanel = () => {
                 <input
                   type="text"
                   className="border rounded-lg py-2 px-4 w-full"
-                  value={`http://54.86.212.176/app/${client_id}/${selectedSalesman?.id}`}
+                  value={`https://reviewcard.www.thewhitetap.com/app/${client_id}/${selectedSalesman?.id}`} 
                   readOnly
                 />
                 <div className="relative flex items-center">
