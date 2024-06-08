@@ -30,6 +30,8 @@ const Analytics = () => {
   const [activities, setActivities] = useState([]);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const client_id = localStorage.getItem('client_id');
 
@@ -115,8 +117,17 @@ const Analytics = () => {
 
   const currentMonth = getMonthName(new Date());
 
-  const productivityOverTime = filterActivitiesByDate(activities)
-    .filter(activity => getMonthName(new Date(activity.activity_timestamp)) === currentMonth)
+  const getActivitiesForCurrentMonth = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return activities.filter(activity => {
+      const activityDate = new Date(activity.activity_timestamp);
+      return activityDate >= firstDay && activityDate <= lastDay;
+    });
+  };
+
+  const productivityOverTime = (startDate || endDate ? filterActivitiesByDate(activities) : getActivitiesForCurrentMonth())
     .reduce((acc, activity) => {
       const date = new Date(activity.activity_timestamp).toLocaleDateString();
       acc[date] = (acc[date] || 0) + 1;
@@ -195,6 +206,13 @@ const Analytics = () => {
     };
   }, []);
 
+  // Pagination implementation
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = totalReviewPointsPerSalesman.slice(indexOfFirstItem, indexOfLastItem);
+  
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <div className="container bg-gray-50 mx-auto p-6">
       <h1 className="text-4xl font-bold mb-6 mt-4 text-center relative top-14 text-gray-800">Salesman Analytics Dashboard</h1>
@@ -240,7 +258,7 @@ const Analytics = () => {
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">Total Review Points per Salesman</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={totalReviewPointsPerSalesman} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={currentItems} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis dataKey="name" tick={{ fontSize: 14 }} />
             <YAxis tick={{ fontSize: 14 }} />
@@ -251,6 +269,17 @@ const Analytics = () => {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        <div className="flex justify-center mt-4">
+          {[...Array(Math.ceil(totalReviewPointsPerSalesman.length / itemsPerPage)).keys()].map((number) => (
+            <button
+              key={number + 1}
+              onClick={() => paginate(number + 1)}
+              className={`px-3 py-1 mx-1 ${currentPage === number + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} rounded`}
+            >
+              {number + 1}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -290,7 +319,9 @@ const Analytics = () => {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-6 text-gray-800">Salesman Performance in {currentMonth}</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+          Salesman Performance {startDate && endDate ? `from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}` : `in ${currentMonth}`}
+        </h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={Object.entries(productivityOverTime).map(([date, count]) => ({ date, count }))} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
