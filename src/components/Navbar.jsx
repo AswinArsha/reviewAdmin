@@ -23,6 +23,8 @@ const Navbar = () => {
     setMenuOpen(!menuOpen);
   };
 
+  const isActive = (path) => location.pathname === path ? 'bg-gray-100 text-gray-700' : 'text-gray-100 hover:bg-gray-100 hover:text-gray-700';
+
   if (!showNavbar) return null;
 
   return (
@@ -34,8 +36,12 @@ const Navbar = () => {
           </p>
         </div>
         <div className="hidden md:flex space-x-6 items-center">
-          <Link to="/admin-panel" className="hover:text-gray-400 transition duration-300">Home</Link>
-          <Link to="/analytics" className="hover:text-gray-400 transition duration-300">Analytics</Link>
+          <Link to="/admin-panel" className={`rounded-lg px-4 py-2 transition duration-300 ${isActive('/admin-panel')}`}>
+            Home
+          </Link>
+          <Link to="/analytics" className={`rounded-lg px-4 py-2 transition duration-300 ${isActive('/analytics')}`}>
+            Analytics
+          </Link>
           <button
             onClick={handleLogout}
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300"
@@ -59,8 +65,12 @@ const Navbar = () => {
             className="md:hidden bg-gray-800 border-t border-gray-700 mt-4 absolute w-full z-20"
           >
             <div className="flex flex-col items-center space-y-4 py-4">
-              <Link to="/admin-panel" className="block text-center hover:text-gray-400 transition duration-300">Admin Panel</Link>
-              <Link to="/analytics" className="block text-center hover:text-gray-400 transition duration-300">Analytics</Link>
+              <Link to="/admin-panel" className={`block text-center rounded-lg px-4 py-2 transition duration-300 ${isActive('/admin-panel')}`}>
+                Home
+              </Link>
+              <Link to="/analytics" className={`block text-center rounded-lg px-4 py-2 transition duration-300 ${isActive('/analytics')}`}>
+                Analytics
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-center bg-red-500 hover:bg-red-600 text-white px-24 py-2 rounded-lg transition duration-300"
