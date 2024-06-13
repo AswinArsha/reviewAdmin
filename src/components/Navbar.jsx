@@ -28,7 +28,7 @@ const Navbar = () => {
   if (!showNavbar) return null;
 
   return (
-    <nav className="bg-gray-900 text-white py-4 shadow-md fixed w-full z-20">
+    <nav className="bg-gray-900 text-white md:py-5 py-4 shadow-md fixed w-full z-20">
       <div className="container mx-auto flex justify-between items-center px-4 md:px-0">
         <div className="text-2xl font-bold tracking-wide">
           <p className="flex items-center">

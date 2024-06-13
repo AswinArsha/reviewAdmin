@@ -214,7 +214,7 @@ const Analytics = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="container bg-gray-50 mx-auto p-6">
+    <div className="container  mx-auto p-6">
       <h1 className="text-4xl font-bold mb-6 mt-4 text-center relative top-14 text-gray-800">Salesman Analytics Dashboard</h1>
 
       <div className="flex flex-col md:flex-row items-center mt-24 mb-8 justify-center space-x-4 space-y-4 md:space-y-0">

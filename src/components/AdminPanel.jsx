@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import {
-  FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy, FaChartLine
+  FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy, FaChartLine, FaDownload
 } from 'react-icons/fa';
 import 'tailwindcss/tailwind.css';
 import whitetapLogo from '../assets/whitetap.png';
@@ -20,6 +20,7 @@ import {
   Legend,
   LabelList
 } from 'recharts';
+import * as XLSX from 'xlsx';
 
 const getMonthName = (date) => {
   const months = [
@@ -63,16 +64,43 @@ const AdminPanel = () => {
   const fetchSalesmen = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: salesmenData, error: salesmenError } = await supabase
         .from('salesmen')
         .select('*')
-        .eq('client_id', client_id)
-        .order('points', { ascending: sortOrder === 'asc' });
+        .eq('client_id', client_id);
 
-      if (error) {
-        console.error('Error fetching salesmen:', error);
+      if (salesmenError) {
+        console.error('Error fetching salesmen:', salesmenError);
       } else {
-        setSalesmen(data);
+        const pointsData = await Promise.all(salesmenData.map(async (salesman) => {
+          const { data: pointsData, error: pointsError } = await supabase
+            .from('client_salesman_activity')
+            .select('*')
+            .eq('salesman_id', salesman.id)
+            .eq('client_id', client_id);
+
+          if (pointsError) {
+            console.error('Error fetching points:', pointsError);
+          }
+
+          const filteredPoints = pointsData.filter(activity => {
+            const activityDate = new Date(activity.activity_timestamp);
+            return (
+              (!startDate || activityDate >= startDate) &&
+              (!endDate || activityDate <= new Date(endDate).setHours(23, 59, 59, 999))
+            );
+          });
+
+          const totalPoints = filteredPoints.length; // Count the number of activities as points
+          return { ...salesman, points: totalPoints };
+        }));
+
+        // Sort the pointsData before setting it in the state
+        const sortedPointsData = pointsData.sort((a, b) => {
+          return sortOrder === 'asc' ? a.points - b.points : b.points - a.points;
+        });
+
+        setSalesmen(sortedPointsData);
       }
     } catch (error) {
       console.error('Error fetching salesmen:', error);
@@ -123,7 +151,7 @@ const AdminPanel = () => {
   useEffect(() => {
     fetchSalesmen();
     fetchClientLogo();
-  }, [sortOrder]);
+  }, [sortOrder, startDate, endDate]);
 
   useEffect(() => {
     const subscription = supabase
@@ -157,6 +185,10 @@ const AdminPanel = () => {
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    const sortedSalesmen = [...salesmen].sort((a, b) => {
+      return sortOrder === 'asc' ? b.points - a.points : a.points - b.points;
+    });
+    setSalesmen(sortedSalesmen);
   };
 
   const handleAddSalesman = async () => {
@@ -239,6 +271,7 @@ const AdminPanel = () => {
   const clearDates = () => {
     setStartDate(null);
     setEndDate(null);
+    setSearchTerm('');
   };
 
   const filterPerformanceByDate = () => {
@@ -266,49 +299,109 @@ const AdminPanel = () => {
     }, {})
   );
 
+  const handleDownload = () => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(
+      filteredSalesmen.map(salesman => ({
+        Name: salesman.name,
+        Points: salesman.points
+      }))
+    );
+    XLSX.utils.book_append_sheet(wb, ws, 'Salesmen Points');
+    XLSX.writeFile(wb, 'salesmen_points.xlsx');
+  };
+
   return (
     <div className="min-h-screen p-4 pt-20 bg-gray-50">
       <div className="text-center mt-4 mb-2">
         {logoUrl && (
           <img src={logoUrl} alt="Company Logo" className="mx-auto w-24 h-auto mb-3" />
         )}
-        <h1 className="text-3xl font-bold text-gray-800">Review Count Table</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Review Growth Tracker</h1>
         <p className="text-gray-600 -mt-16 -mb-[68px] ml-[70px]">
           Powered by
           <img src={whitetapLogo} alt="White Tap Logo" className="inline-block w-48 h-auto -ml-12" />
         </p>
       </div>
 
-      <div className="lg:flex lg:items-center lg:justify-between lg:mb-8 sticky top-16 z-10 p-4 bg-gray-50">
-        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 justify-between mb-8 lg:mb-0 lg:space-x-4 w-full">
-          <div className="relative mb-4 md:mb-0 flex-grow">
-            <input
-              type="text"
-              className="border rounded-lg py-2 px-4 w-full focus:outline-none focus:ring focus:border-blue-300"
-              placeholder="Search by name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
-              <FaSearch />
-            </span>
+      <div className="sticky mt-0 top-20 z-10 bg-gray-50 py-4 rounded-lg mb-8 ">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4 md:mb-0 w-full">
+            <div className="relative flex-grow mb-4 md:mb-0">
+              <input
+                type="text"
+                className="border border-gray-300 rounded-lg py-2 px-4 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
+                <FaSearch />
+              </span>
+            </div>
+           
           </div>
-
-          <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 w-full md:w-auto">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center justify-center mb-4 md:mb-0"
-            >
-              <FaPlus className="mr-2" />
-              Add Salesman
-            </button>
-
+          <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4 md:mb-0 w-full">
+            <div className="flex md:ml-4 md:-mt-6 flex-col md:flex-row md:items-center md:space-x-4 mb-4 md:mb-0 w-full">
+              <div className="relative flex-grow mb-4 md:mb-0">
+                <label className="block text-gray-700 font-semibold mb-1">
+                  Start Date:
+                </label>
+                <DatePicker
+                
+                  selected={startDate}
+                  onChange={(date) => setStartDate(date)}
+                  selectsStart
+                  startDate={startDate}
+                  endDate={endDate}
+                  dateFormat="yyyy-MM-dd"
+                  className="border border-gray-300 rounded px-2 py-1 w-full"
+                />
+              </div>
+              <div className="relative flex-grow mb-4 md:mb-0">
+                <label className="block text-gray-700 font-semibold mb-1">
+                  End Date:
+                </label>
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date) => setEndDate(date)}
+                  selectsEnd
+                  startDate={startDate}
+                  endDate={endDate}
+                  minDate={startDate}
+                  dateFormat="yyyy-MM-dd"
+                  className="border border-gray-300 rounded px-2 py-1 w-full"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col md:ml-5 md:flex-row md:items-center md:space-x-4 w-full">
             <button
               onClick={toggleSortOrder}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center"
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
             >
-              {sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}
-              <span className="ml-2">Sort by Points</span>
+              {sortOrder === "asc" ? <FaSortUp /> : <FaSortDown />}
+              <span className="ml-2">Sort</span>
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center"
+            >
+              <FaPlus className="mr-2" />
+              Add
+            </button>
+            <button
+              onClick={handleDownload}
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center"
+            >
+              <FaDownload className="mr-2" />
+              Download
+            </button>
+            <button
+              onClick={clearDates}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center"
+            >
+              Clear
             </button>
           </div>
         </div>
