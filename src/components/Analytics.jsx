@@ -31,6 +31,8 @@ const Analytics = () => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [topPerformersPage, setTopPerformersPage] = useState(1);
+  const [lowPerformersPage, setLowPerformersPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
   const client_id = localStorage.getItem('client_id');
@@ -102,9 +104,15 @@ const Analytics = () => {
       points: pointsPerSalesman[salesman.id]?.points || 0
     })).sort((a, b) => b.points - a.points);
 
+    const uniqueTopScores = Array.from(new Set(sortedSalesmen.map(s => s.points))).slice(0, 5);
+    const lastTopScore = uniqueTopScores[uniqueTopScores.length - 1];
+
+    const uniqueLowScores = Array.from(new Set(sortedSalesmen.map(s => s.points))).slice(-5).reverse();
+    const lastLowScore = uniqueLowScores[uniqueLowScores.length - 1];
+
     return {
-      topPerformers: sortedSalesmen.slice(0, 5),
-      lowPerformers: sortedSalesmen.slice(-5).reverse()
+      topPerformers: sortedSalesmen.filter(s => s.points >= lastTopScore),
+      lowPerformers: sortedSalesmen.filter(s => s.points <= lastLowScore).sort((a, b) => a.points - b.points)
     };
   };
 
@@ -206,15 +214,22 @@ const Analytics = () => {
     };
   }, []);
 
-  // Pagination implementation
+  // Pagination implementation for total review points per salesman
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = totalReviewPointsPerSalesman.slice(indexOfFirstItem, indexOfLastItem);
   
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Pagination implementation for top and low performers
+  const paginateTopPerformers = (pageNumber) => setTopPerformersPage(pageNumber);
+  const paginateLowPerformers = (pageNumber) => setLowPerformersPage(pageNumber);
+
+  const displayedTopPerformers = topPerformers.slice((topPerformersPage - 1) * itemsPerPage, topPerformersPage * itemsPerPage);
+  const displayedLowPerformers = lowPerformers.slice((lowPerformersPage - 1) * itemsPerPage, lowPerformersPage * itemsPerPage);
+
   return (
-    <div className="container  mx-auto p-6">
+    <div className="container mx-auto p-6">
       <h1 className="text-4xl font-bold mb-6 mt-4 text-center relative top-14 text-gray-800">Salesman Analytics Dashboard</h1>
 
       <div className="flex flex-col md:flex-row items-center mt-24 mb-8 justify-center space-x-4 space-y-4 md:space-y-0">
@@ -284,11 +299,11 @@ const Analytics = () => {
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">Top and Low Performers</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-20">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-xl font-semibold mb-4 text-green-500">Top Performers</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topPerformers} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={displayedTopPerformers} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
@@ -299,11 +314,22 @@ const Analytics = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            <div className="flex justify-center mt-4">
+              {[...Array(Math.ceil(topPerformers.length / itemsPerPage)).keys()].map((number) => (
+                <button
+                  key={number + 1}
+                  onClick={() => paginateTopPerformers(number + 1)}
+                  className={`px-3 py-1 mx-1 ${topPerformersPage === number + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} rounded`}
+                >
+                  {number + 1}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-xl font-semibold mb-4 text-red-500">Low Performers</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={lowPerformers} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={displayedLowPerformers} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
@@ -314,6 +340,17 @@ const Analytics = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            <div className="flex justify-center mt-4">
+              {[...Array(Math.ceil(lowPerformers.length / itemsPerPage)).keys()].map((number) => (
+                <button
+                  key={number + 1}
+                  onClick={() => paginateLowPerformers(number + 1)}
+                  className={`px-3 py-1 mx-1 ${lowPerformersPage === number + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} rounded`}
+                >
+                  {number + 1}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

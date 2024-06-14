@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import {
-  FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy, FaChartLine, FaDownload
+  FaSearch, FaSortUp, FaSortDown, FaPlus, FaEdit, FaTrash, FaTimes, FaEye, FaCopy, FaChartLine, FaDownload, FaCog
 } from 'react-icons/fa';
 import 'tailwindcss/tailwind.css';
 import whitetapLogo from '../assets/whitetap.png';
@@ -51,6 +51,7 @@ const AdminPanel = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [selectedSalesman, setSelectedSalesman] = useState(null);
   const [newSalesmanName, setNewSalesmanName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -324,8 +325,31 @@ const AdminPanel = () => {
         </p>
       </div>
 
-      <div className="sticky mt-0 top-20 z-10 bg-gray-50 py-4 rounded-lg mb-8 ">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between p-4">
+      <div className="sticky mt-0 top-20 z-10 bg-gray-50 py-4 rounded-lg mb-8">
+        {/* Mobile view */}
+        <div className="flex    md:hidden items-center md:flex-row md:justify-between p-4">
+          <div className="relative flex-grow mb-4 md:mb-0">
+            <input
+              type="text"
+              className="border border-gray-300 rounded-lg py-2 px-4 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
+              <FaSearch />
+            </span>
+          </div>
+          <button
+            onClick={() => setShowFiltersModal(true)}
+            className="bg-gray-300 text-gray-700 -mt-5 ml-4 px-5 py-3 rounded-lg hover:bg-gray-400 flex items-center"
+          >
+            <FaCog />
+          </button>
+        </div>
+
+        {/* Desktop view */}
+        <div className="hidden md:flex flex-col md:flex-row md:items-center md:justify-between p-4">
           <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4 md:mb-0 w-full">
             <div className="relative flex-grow mb-4 md:mb-0">
               <input
@@ -339,7 +363,6 @@ const AdminPanel = () => {
                 <FaSearch />
               </span>
             </div>
-           
           </div>
           <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4 md:mb-0 w-full">
             <div className="flex md:ml-4 md:-mt-6 flex-col md:flex-row md:items-center md:space-x-4 mb-4 md:mb-0 w-full">
@@ -348,7 +371,6 @@ const AdminPanel = () => {
                   Start Date:
                 </label>
                 <DatePicker
-                
                   selected={startDate}
                   onChange={(date) => setStartDate(date)}
                   selectsStart
@@ -696,6 +718,80 @@ const AdminPanel = () => {
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFiltersModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Filters</h2>
+              <button
+                onClick={() => setShowFiltersModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="flex flex-col space-y-4">
+              <div className="relative flex-grow mb-4 md:mb-0">
+                <label className="block text-gray-700 font-semibold mb-1">
+                  Start Date:
+                </label>
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date) => setStartDate(date)}
+                  selectsStart
+                  startDate={startDate}
+                  endDate={endDate}
+                  dateFormat="yyyy-MM-dd"
+                  className="border border-gray-300 rounded px-2 py-1 w-full"
+                />
+              </div>
+              <div className="relative flex-grow mb-4 md:mb-0">
+                <label className="block text-gray-700 font-semibold mb-1">
+                  End Date:
+                </label>
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date) => setEndDate(date)}
+                  selectsEnd
+                  startDate={startDate}
+                  endDate={endDate}
+                  minDate={startDate}
+                  dateFormat="yyyy-MM-dd"
+                  className="border border-gray-300 rounded px-2 py-1 w-full"
+                />
+              </div>
+              <button
+                onClick={toggleSortOrder}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
+              >
+                {sortOrder === "asc" ? <FaSortUp /> : <FaSortDown />}
+                <span className="ml-2">Sort</span>
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center"
+              >
+                <FaPlus className="mr-2" />
+                Add
+              </button>
+              <button
+                onClick={handleDownload}
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center"
+              >
+                <FaDownload className="mr-2" />
+                Download
+              </button>
+              <button
+                onClick={clearDates}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center"
+              >
+                Clear
               </button>
             </div>
           </div>
